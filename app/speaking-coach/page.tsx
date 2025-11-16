@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,7 +14,7 @@ interface Feedback {
   overallFeedback: string
 }
 
-export default function SpeakingCoachPage() {
+function SpeakingCoachContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [isRecording, setIsRecording] = useState(false)
@@ -287,5 +287,19 @@ export default function SpeakingCoachPage() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function SpeakingCoachPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        </div>
+      }
+    >
+      <SpeakingCoachContent />
+    </Suspense>
   )
 }
