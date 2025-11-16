@@ -3,11 +3,11 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { HelpCircle, Lightbulb, X, Volume2, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import SpeakingCoachDialog from "@/components/speaking-coach-dialog"
 
 interface Flashcard {
   question: string
@@ -21,7 +21,7 @@ interface FlashcardGridProps {
 export default function FlashcardGrid({ flashcards }: FlashcardGridProps) {
   const [selectedCard, setSelectedCard] = useState<number | null>(null)
   const [playingAudio, setPlayingAudio] = useState<number | null>(null)
-  const router = useRouter()
+  const [speakingCoachCard, setSpeakingCoachCard] = useState<Flashcard | null>(null)
 
   const handlePlayAudio = async (e: React.MouseEvent, text: string, index: number) => {
     e.stopPropagation()
@@ -63,11 +63,7 @@ export default function FlashcardGrid({ flashcards }: FlashcardGridProps) {
 
   const handleSpeakingCoach = (e: React.MouseEvent, card: Flashcard) => {
     e.stopPropagation()
-    const params = new URLSearchParams({
-      question: card.question,
-      answer: card.answer,
-    })
-    router.push(`/speaking-coach?${params.toString()}`)
+    setSpeakingCoachCard(card)
   }
 
   return (
@@ -177,6 +173,18 @@ export default function FlashcardGrid({ flashcards }: FlashcardGridProps) {
             </Card>
           </div>
         </div>
+      )}
+
+      {/* Speaking Coach Dialog */}
+      {speakingCoachCard && (
+        <SpeakingCoachDialog
+          open={speakingCoachCard !== null}
+          onOpenChange={(open) => {
+            if (!open) setSpeakingCoachCard(null)
+          }}
+          question={speakingCoachCard.question}
+          answer={speakingCoachCard.answer}
+        />
       )}
     </>
   )
