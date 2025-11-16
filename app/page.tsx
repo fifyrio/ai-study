@@ -1,7 +1,24 @@
+"use client"
+
+import { useState } from "react"
 import FlashcardGenerator from "@/components/flashcard-generator"
+import FlashcardHistory from "@/components/flashcard-history"
 import { Sparkles } from "lucide-react"
 
+interface Flashcard {
+  question: string
+  answer: string
+}
+
 export default function Home() {
+  const [loadedFlashcards, setLoadedFlashcards] = useState<Flashcard[] | undefined>()
+  const [loadedTitle, setLoadedTitle] = useState<string | undefined>()
+
+  const handleLoadFlashcards = (flashcards: Flashcard[], title: string) => {
+    setLoadedFlashcards(flashcards)
+    setLoadedTitle(title)
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-blue-950/20 dark:to-purple-950/20">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -21,10 +38,13 @@ export default function Home() {
               AI 闪卡生成器
             </h1>
             <p className="mx-auto max-w-2xl text-balance text-lg leading-relaxed text-gray-600 dark:text-gray-400">
-              输入任何学习资料，让 AI 为你自动生成 10 个精心设计的问答闪卡，让学习更高效
+              输入任何学习资料，让 AI 为你自动生成精心设计的问答闪卡，让学习更高效
             </p>
           </div>
-          <FlashcardGenerator />
+          <div className="space-y-8">
+            <FlashcardHistory onLoadFlashcards={handleLoadFlashcards} />
+            <FlashcardGenerator initialFlashcards={loadedFlashcards} initialTitle={loadedTitle} />
+          </div>
         </div>
       </div>
     </main>

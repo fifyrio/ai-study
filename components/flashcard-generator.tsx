@@ -13,14 +13,29 @@ interface Flashcard {
   answer: string
 }
 
-export default function FlashcardGenerator() {
+interface FlashcardSet {
+  id: string
+  title: string
+  flashcards: Flashcard[]
+  createdAt: string
+  language: string
+  scenario: string
+}
+
+interface FlashcardGeneratorProps {
+  initialFlashcards?: Flashcard[]
+  initialTitle?: string
+}
+
+export default function FlashcardGenerator({ initialFlashcards, initialTitle }: FlashcardGeneratorProps = {}) {
   const [content, setContent] = useState("")
-  const [flashcards, setFlashcards] = useState<Flashcard[]>([])
+  const [flashcards, setFlashcards] = useState<Flashcard[]>(initialFlashcards || [])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [language, setLanguage] = useState("中文")
   const [scenario, setScenario] = useState("学习")
   const [count, setCount] = useState("10")
+  const [loadedTitle, setLoadedTitle] = useState(initialTitle)
 
   const generateFlashcards = async () => {
     if (!content.trim()) {
@@ -47,6 +62,9 @@ export default function FlashcardGenerator() {
 
       const data = await response.json()
       setFlashcards(data.flashcards)
+
+      // Generate title and save to localStorage
+      await saveFlashcardSet(content, data.flashcards)
     } catch (err) {
       setError(err instanceof Error ? err.message : "生成闪卡时出错，请重试")
     } finally {
@@ -54,10 +72,57 @@ export default function FlashcardGenerator() {
     }
   }
 
+  const saveFlashcardSet = async (contentText: string, cards: Flashcard[]) => {
+    try {
+      // Generate title
+      const titleResponse = await fetch("/api/generate-title", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: contentText }),
+      })
+
+      let title = "未命名闪卡集"
+      if (titleResponse.ok) {
+        const titleData = await titleResponse.json()
+        title = titleData.title
+      }
+
+      // Create flashcard set
+      const flashcardSet: FlashcardSet = {
+        id: Date.now().toString(),
+        title,
+        flashcards: cards,
+        createdAt: new Date().toISOString(),
+        language,
+        scenario,
+      }
+
+      // Save to localStorage
+      const savedSets = JSON.parse(localStorage.getItem("flashcardSets") || "[]")
+      savedSets.unshift(flashcardSet) // Add to beginning
+
+      // Keep only last 20 sets
+      if (savedSets.length > 20) {
+        savedSets.pop()
+      }
+
+      localStorage.setItem("flashcardSets", JSON.stringify(savedSets))
+
+      // Dispatch event to notify other components
+      window.dispatchEvent(new Event("flashcardsUpdated"))
+    } catch (err) {
+      console.error("Error saving flashcard set:", err)
+      // Don't show error to user, saving is a nice-to-have feature
+    }
+  }
+
   const handleReset = () => {
     setContent("")
     setFlashcards([])
     setError("")
+    setLoadedTitle(undefined)
   }
 
   return (
@@ -183,7 +248,9 @@ export default function FlashcardGenerator() {
         <>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">你的闪卡</h2>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                {loadedTitle || "你的闪卡"}
+              </h2>
               <p className="mt-1 text-gray-600 dark:text-gray-400">点击任意卡片查看答案</p>
             </div>
             <Button
