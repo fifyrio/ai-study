@@ -22,10 +22,10 @@ interface FlashcardSet {
 }
 
 interface FlashcardHistoryProps {
-  onLoadFlashcards: (flashcards: Flashcard[], title: string) => void
+  onSelectSet: (set: FlashcardSet) => void
 }
 
-export default function FlashcardHistory({ onLoadFlashcards }: FlashcardHistoryProps) {
+export default function FlashcardHistory({ onSelectSet }: FlashcardHistoryProps) {
   const [savedSets, setSavedSets] = useState<FlashcardSet[]>([])
 
   useEffect(() => {
@@ -59,8 +59,8 @@ export default function FlashcardHistory({ onLoadFlashcards }: FlashcardHistoryP
     }
   }
 
-  const loadSet = (set: FlashcardSet) => {
-    onLoadFlashcards(set.flashcards, set.title)
+  const handleSelectSet = (set: FlashcardSet) => {
+    onSelectSet(set)
   }
 
   if (savedSets.length === 0) {
@@ -84,7 +84,7 @@ export default function FlashcardHistory({ onLoadFlashcards }: FlashcardHistoryP
               key={set.id}
               className="group flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-white p-4 transition-all hover:border-blue-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800/50 dark:hover:border-blue-600"
             >
-              <div className="flex-1 cursor-pointer" onClick={() => loadSet(set)}>
+              <div className="flex-1 cursor-pointer" onClick={() => handleSelectSet(set)}>
                 <h3 className="mb-2 font-semibold text-gray-900 dark:text-gray-100">{set.title}</h3>
                 <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                   <div className="flex items-center gap-1">
