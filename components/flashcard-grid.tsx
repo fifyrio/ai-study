@@ -3,9 +3,10 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { HelpCircle, Lightbulb, X, Volume2 } from "lucide-react"
+import { HelpCircle, Lightbulb, X, Volume2, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface Flashcard {
@@ -20,6 +21,7 @@ interface FlashcardGridProps {
 export default function FlashcardGrid({ flashcards }: FlashcardGridProps) {
   const [selectedCard, setSelectedCard] = useState<number | null>(null)
   const [playingAudio, setPlayingAudio] = useState<number | null>(null)
+  const router = useRouter()
 
   const handlePlayAudio = async (e: React.MouseEvent, text: string, index: number) => {
     e.stopPropagation()
@@ -59,6 +61,15 @@ export default function FlashcardGrid({ flashcards }: FlashcardGridProps) {
     }
   }
 
+  const handleSpeakingCoach = (e: React.MouseEvent, card: Flashcard) => {
+    e.stopPropagation()
+    const params = new URLSearchParams({
+      question: card.question,
+      answer: card.answer,
+    })
+    router.push(`/speaking-coach?${params.toString()}`)
+  }
+
   return (
     <>
       <div className="grid gap-6 sm:grid-cols-2">
@@ -77,6 +88,18 @@ export default function FlashcardGrid({ flashcards }: FlashcardGridProps) {
                     {index + 1}
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-9 w-9 rounded-lg transition-all",
+                        "bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-950 dark:text-green-400 dark:hover:bg-green-900",
+                      )}
+                      onClick={(e) => handleSpeakingCoach(e, card)}
+                      title="口语教练"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
