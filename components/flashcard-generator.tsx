@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
-import { Loader2, Sparkles, RotateCcw, BookOpen, Languages } from "lucide-react"
+import { Loader2, Sparkles, RotateCcw, BookOpen, Languages, Target, Hash } from "lucide-react"
 import FlashcardGrid from "@/components/flashcard-grid"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -19,6 +19,8 @@ export default function FlashcardGenerator() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [language, setLanguage] = useState("中文")
+  const [scenario, setScenario] = useState("学习")
+  const [count, setCount] = useState("10")
 
   const generateFlashcards = async () => {
     if (!content.trim()) {
@@ -35,7 +37,7 @@ export default function FlashcardGenerator() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ content, language }),
+        body: JSON.stringify({ content, language, scenario, count }),
       })
 
       if (!response.ok) {
@@ -85,23 +87,67 @@ export default function FlashcardGenerator() {
                 disabled={isLoading}
               />
 
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-600">
-                  <Languages className="h-5 w-5 text-white" />
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-600">
+                    <Languages className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <label htmlFor="language" className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      输出语言
+                    </label>
+                    <Select value={language} onValueChange={setLanguage} disabled={isLoading}>
+                      <SelectTrigger className="mt-1.5 border-2 border-gray-200 bg-white transition-colors focus:border-purple-500 dark:border-gray-700 dark:bg-gray-800/50 dark:focus:border-purple-400">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="中文">中文</SelectItem>
+                        <SelectItem value="英语">英语</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <label htmlFor="language" className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    输出语言
-                  </label>
-                  <Select value={language} onValueChange={setLanguage} disabled={isLoading}>
-                    <SelectTrigger className="mt-1.5 border-2 border-gray-200 bg-white transition-colors focus:border-purple-500 dark:border-gray-700 dark:bg-gray-800/50 dark:focus:border-purple-400">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="中文">中文</SelectItem>
-                      <SelectItem value="英语">英语</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-red-600">
+                    <Target className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <label htmlFor="scenario" className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      使用场景
+                    </label>
+                    <Select value={scenario} onValueChange={setScenario} disabled={isLoading}>
+                      <SelectTrigger className="mt-1.5 border-2 border-gray-200 bg-white transition-colors focus:border-orange-500 dark:border-gray-700 dark:bg-gray-800/50 dark:focus:border-orange-400">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="学习">学习</SelectItem>
+                        <SelectItem value="面试">面试</SelectItem>
+                        <SelectItem value="备考">备考</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600">
+                    <Hash className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <label htmlFor="count" className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      闪卡数量
+                    </label>
+                    <Select value={count} onValueChange={setCount} disabled={isLoading}>
+                      <SelectTrigger className="mt-1.5 border-2 border-gray-200 bg-white transition-colors focus:border-cyan-500 dark:border-gray-700 dark:bg-gray-800/50 dark:focus:border-cyan-400">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 个</SelectItem>
+                        <SelectItem value="10">10 个</SelectItem>
+                        <SelectItem value="auto">自动</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
@@ -126,7 +172,7 @@ export default function FlashcardGenerator() {
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-5 w-5" />
-                    生成 10 个闪卡
+                    生成{count === "auto" ? "自动数量" : count + " 个"}闪卡
                   </>
                 )}
               </Button>
