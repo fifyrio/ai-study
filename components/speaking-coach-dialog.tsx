@@ -6,9 +6,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Mic, Square, Loader2, Sparkles, AlertCircle, Volume2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+interface GrammarError {
+  original: string
+  corrected: string
+  explanation: string
+}
+
 interface Feedback {
   transcription: string
-  grammarErrors: string[]
+  grammarErrors: GrammarError[]
   suggestions: string[]
   overallFeedback: string
 }
@@ -273,14 +279,30 @@ export default function SpeakingCoachDialog({ open, onOpenChange, question, answ
                 {feedback.grammarErrors.length > 0 && (
                   <div>
                     <h4 className="mb-2 text-sm font-semibold uppercase tracking-wider text-white/90">语法错误</h4>
-                    <ul className="space-y-1 rounded-lg bg-white/20 p-3 text-sm backdrop-blur-sm">
+                    <div className="space-y-3 rounded-lg bg-white/20 p-3 text-sm backdrop-blur-sm">
                       {feedback.grammarErrors.map((error, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-red-300" />
-                          {error}
-                        </li>
+                        <div key={index} className="space-y-1.5 rounded-lg bg-white/10 p-3">
+                          <div className="flex items-start gap-2">
+                            <span className="mt-0.5 text-red-300">✗</span>
+                            <div className="flex-1">
+                              <span className="font-medium text-red-200">原句：</span>
+                              <span className="line-through">{error.original}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="mt-0.5 text-green-300">✓</span>
+                            <div className="flex-1">
+                              <span className="font-medium text-green-200">修正：</span>
+                              <span>{error.corrected}</span>
+                            </div>
+                          </div>
+                          <div className="ml-6 text-xs text-white/80">
+                            <span className="font-medium">说明：</span>
+                            {error.explanation}
+                          </div>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
 

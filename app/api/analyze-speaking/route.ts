@@ -31,24 +31,33 @@ Expected Answer: ${answer}
 User's Spoken Response: ${transcription}
 
 Please analyze the user's spoken English and provide:
-1. Grammar errors (if any)
+1. Grammar errors with original and corrected sentences
 2. Suggestions for improvement (pronunciation, word choice, sentence structure, fluency)
 3. Overall feedback on their speaking
 
 Return your analysis in the following JSON format:
 {
   "transcription": "${transcription}",
-  "grammarErrors": ["error1", "error2", ...],
+  "grammarErrors": [
+    {
+      "original": "the original incorrect sentence or phrase",
+      "corrected": "the corrected sentence or phrase",
+      "explanation": "brief explanation of the error"
+    }
+  ],
   "suggestions": ["suggestion1", "suggestion2", ...],
   "overallFeedback": "detailed feedback here"
 }
 
 Requirements:
 - If there are no grammar errors, return an empty array for grammarErrors
+- For each grammar error, provide the original sentence, corrected version, and a brief explanation
+- IMPORTANT: Do NOT include duplicate grammar errors. Each error should be unique based on the original text
 - Provide at least 2-3 constructive suggestions
 - Make the overall feedback encouraging but honest
 - Focus on practical improvements
-- Only return the JSON object, no other text or explanations.`,
+- Only return the JSON object, no other text or explanations
+- Ensure the JSON is valid and properly formatted`,
           },
         ],
       }),
@@ -73,12 +82,39 @@ Requirements:
       feedback = JSON.parse(cleanedText)
     } catch (parseError) {
       console.error("Failed to parse AI response:", text)
-      return Response.json({ error: "Failed to parse AI response" }, { status: 500 })
+      return Response.json({ error: "解析 AI 响应失败，请重试" }, { status: 500 })
     }
 
     // Validate response structure
     if (!feedback.grammarErrors || !feedback.suggestions || !feedback.overallFeedback) {
-      return Response.json({ error: "Invalid feedback structure" }, { status: 500 })
+      return Response.json({ error: "AI 响应格式不正确，请重试" }, { status: 500 })
+    }
+
+    // Validate grammarErrors structure
+    if (!Array.isArray(feedback.grammarErrors)) {
+      feedback.grammarErrors = []
+    } else {
+      // Remove duplicates and validate each error
+      const seen = new Set()
+      feedback.grammarErrors = feedback.grammarErrors.filter((error: any) => {
+        // Validate error structure
+        if (!error || typeof error !== "object" || !error.original || !error.corrected || !error.explanation) {
+          return false
+        }
+
+        // Remove duplicates based on original text
+        const key = error.original.trim().toLowerCase()
+        if (seen.has(key)) {
+          return false
+        }
+        seen.add(key)
+        return true
+      })
+    }
+
+    // Validate suggestions
+    if (!Array.isArray(feedback.suggestions)) {
+      feedback.suggestions = []
     }
 
     return Response.json(feedback)
