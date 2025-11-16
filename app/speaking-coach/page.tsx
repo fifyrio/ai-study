@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mic, Square, Loader2, ArrowLeft, Sparkles, AlertCircle } from "lucide-react"
+import { Mic, Square, Loader2, ArrowLeft, Sparkles, AlertCircle, Volume2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Feedback {
@@ -21,6 +21,7 @@ function SpeakingCoachContent() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [error, setError] = useState("")
+  const [playingAudio, setPlayingAudio] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
 
@@ -135,6 +136,42 @@ function SpeakingCoachContent() {
     }
   }
 
+  const handlePlayQuestionAudio = async () => {
+    if (playingAudio) {
+      return
+    }
+
+    setPlayingAudio(true)
+
+    try {
+      const response = await fetch("/api/text-to-speech", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: question }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to generate speech")
+      }
+
+      const audioBlob = await response.blob()
+      const audioUrl = URL.createObjectURL(audioBlob)
+      const audio = new Audio(audioUrl)
+
+      audio.onended = () => {
+        setPlayingAudio(false)
+        URL.revokeObjectURL(audioUrl)
+      }
+
+      await audio.play()
+    } catch (error) {
+      console.error("Error playing audio:", error)
+      setPlayingAudio(false)
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-gray-950 dark:via-green-950/20 dark:to-teal-950/20">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -167,7 +204,24 @@ function SpeakingCoachContent() {
           <div className="space-y-6">
             <Card className="border-0 bg-white/80 shadow-xl backdrop-blur-sm dark:bg-gray-900/80">
               <CardHeader>
-                <CardTitle className="text-lg text-gray-900 dark:text-gray-100">闪卡问题</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg text-gray-900 dark:text-gray-100">闪卡问题</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-9 w-9 rounded-lg transition-all",
+                      playingAudio
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:hover:bg-blue-900",
+                    )}
+                    onClick={handlePlayQuestionAudio}
+                    disabled={playingAudio}
+                    title="播放问题语音"
+                  >
+                    <Volume2 className={cn("h-4 w-4", playingAudio && "animate-pulse")} />
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">{question}</p>
