@@ -32,6 +32,8 @@ export default function SpeakingCoachDialog({ open, onOpenChange, question, answ
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [error, setError] = useState("")
   const [playingAudio, setPlayingAudio] = useState(false)
+  const [playingAnswerAudio, setPlayingAnswerAudio] = useState(false)
+  const [playingGrammarIndex, setPlayingGrammarIndex] = useState<number | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
 
@@ -170,6 +172,78 @@ export default function SpeakingCoachDialog({ open, onOpenChange, question, answ
     }
   }
 
+  const handlePlayAnswerAudio = async () => {
+    if (playingAnswerAudio) {
+      return
+    }
+
+    setPlayingAnswerAudio(true)
+
+    try {
+      const response = await fetch("/api/text-to-speech", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: answer }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to generate speech")
+      }
+
+      const audioBlob = await response.blob()
+      const audioUrl = URL.createObjectURL(audioBlob)
+      const audio = new Audio(audioUrl)
+
+      audio.onended = () => {
+        setPlayingAnswerAudio(false)
+        URL.revokeObjectURL(audioUrl)
+      }
+
+      await audio.play()
+    } catch (error) {
+      console.error("Error playing audio:", error)
+      setPlayingAnswerAudio(false)
+    }
+  }
+
+  const handlePlayGrammarAudio = async (text: string, index: number) => {
+    if (playingGrammarIndex !== null) {
+      return
+    }
+
+    setPlayingGrammarIndex(index)
+
+    try {
+      const response = await fetch("/api/text-to-speech", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to generate speech")
+      }
+
+      const audioBlob = await response.blob()
+      const audioUrl = URL.createObjectURL(audioBlob)
+      const audio = new Audio(audioUrl)
+
+      audio.onended = () => {
+        setPlayingGrammarIndex(null)
+        URL.revokeObjectURL(audioUrl)
+      }
+
+      await audio.play()
+    } catch (error) {
+      console.error("Error playing audio:", error)
+      setPlayingGrammarIndex(null)
+    }
+  }
+
   const handleClose = () => {
     setFeedback(null)
     setError("")
@@ -214,7 +288,24 @@ export default function SpeakingCoachDialog({ open, onOpenChange, question, answ
 
           {/* Answer Reference */}
           <div className="rounded-lg border-2 border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-            <h3 className="mb-2 font-semibold text-gray-900 dark:text-gray-100">参考答案</h3>
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">参考答案</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8 rounded-lg transition-all",
+                  playingAnswerAudio
+                    ? "bg-green-500 text-white hover:bg-green-600"
+                    : "bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-950 dark:text-green-400 dark:hover:bg-green-900",
+                )}
+                onClick={handlePlayAnswerAudio}
+                disabled={playingAnswerAudio}
+                title="播放参考答案语音"
+              >
+                <Volume2 className={cn("h-4 w-4", playingAnswerAudio && "animate-pulse")} />
+              </Button>
+            </div>
             <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">{answer}</p>
           </div>
 
@@ -288,6 +379,21 @@ export default function SpeakingCoachDialog({ open, onOpenChange, question, answ
                               <span className="font-medium text-red-200">原句：</span>
                               <span className="line-through">{error.original}</span>
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={cn(
+                                "h-7 w-7 flex-shrink-0 rounded-lg transition-all",
+                                playingGrammarIndex === index * 2
+                                  ? "bg-white/30 text-white hover:bg-white/40"
+                                  : "bg-white/10 text-white/80 hover:bg-white/20",
+                              )}
+                              onClick={() => handlePlayGrammarAudio(error.original, index * 2)}
+                              disabled={playingGrammarIndex !== null}
+                              title="播放原句语音"
+                            >
+                              <Volume2 className={cn("h-3.5 w-3.5", playingGrammarIndex === index * 2 && "animate-pulse")} />
+                            </Button>
                           </div>
                           <div className="flex items-start gap-2">
                             <span className="mt-0.5 text-green-300">✓</span>
@@ -295,6 +401,23 @@ export default function SpeakingCoachDialog({ open, onOpenChange, question, answ
                               <span className="font-medium text-green-200">修正：</span>
                               <span>{error.corrected}</span>
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={cn(
+                                "h-7 w-7 flex-shrink-0 rounded-lg transition-all",
+                                playingGrammarIndex === index * 2 + 1
+                                  ? "bg-white/30 text-white hover:bg-white/40"
+                                  : "bg-white/10 text-white/80 hover:bg-white/20",
+                              )}
+                              onClick={() => handlePlayGrammarAudio(error.corrected, index * 2 + 1)}
+                              disabled={playingGrammarIndex !== null}
+                              title="播放修正后语音"
+                            >
+                              <Volume2
+                                className={cn("h-3.5 w-3.5", playingGrammarIndex === index * 2 + 1 && "animate-pulse")}
+                              />
+                            </Button>
                           </div>
                           <div className="ml-6 text-xs text-white/80">
                             <span className="font-medium">说明：</span>
