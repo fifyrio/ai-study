@@ -1,3 +1,50 @@
+type Flashcard = { question: string; answer: string }
+
+function parseFlashcardsText(rawText: string): Flashcard[] {
+  const cleanedText = rawText.replace(/```json\n?|\n?```/g, "").trim()
+
+  const tryParse = (text: string) => {
+    try {
+      return JSON.parse(text)
+    } catch {
+      return null
+    }
+  }
+
+  const tryReturnArray = (value: unknown): Flashcard[] | null => {
+    if (Array.isArray(value)) return value as Flashcard[]
+    if (value && typeof value === "object" && Array.isArray((value as { flashcards?: Flashcard[] }).flashcards)) {
+      return (value as { flashcards: Flashcard[] }).flashcards
+    }
+    return null
+  }
+
+  const directResult = tryReturnArray(tryParse(cleanedText))
+  if (directResult) return directResult
+
+  const arrayMatch = cleanedText.match(/\[[\s\S]*\]/)
+  if (arrayMatch) {
+    const arrayResult = tryReturnArray(tryParse(arrayMatch[0]))
+    if (arrayResult) return arrayResult
+  }
+
+  const objectMatches = cleanedText.match(/\{[\s\S]*?\}/g)
+  if (objectMatches) {
+    const cards: Flashcard[] = []
+    for (const rawCard of objectMatches) {
+      if (!/"question"\s*:/i.test(rawCard) || !/"answer"\s*:/i.test(rawCard)) continue
+      const normalized = rawCard.replace(/,\s*$/, "")
+      const parsedCard = tryParse(normalized)
+      if (parsedCard && typeof parsedCard === "object" && "question" in parsedCard && "answer" in parsedCard) {
+        cards.push(parsedCard as Flashcard)
+      }
+    }
+    if (cards.length > 0) return cards
+  }
+
+  throw new Error("Unable to parse flashcards JSON")
+}
+
 export async function POST(req: Request) {
   try {
     const { content, language = "中文", scenario = "学习", count = "10" } = await req.json()
@@ -101,8 +148,7 @@ ${content}
 
     let flashcards
     try {
-      const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim()
-      flashcards = JSON.parse(cleanedText)
+      flashcards = parseFlashcardsText(text)
     } catch (parseError) {
       console.error("Failed to parse AI response:", text)
       return Response.json({ error: "解析 AI 响应失败，请重试" }, { status: 500 })
